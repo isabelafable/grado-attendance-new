@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grado · Faculty — Attendance</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="ds-base.js"></script>
+<script src="data.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--font-sans); color: var(--text-primary); background: var(--surface-page); }
+  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .topbar {
+    flex-shrink: 0; height: 58px; background: var(--grado-dark-blue);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px; color: #fff;
+  }
+  .subbar {
+    flex-shrink: 0; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle);
+    padding: 0 24px; height: 48px; display: flex; align-items: center; gap: 10px;
+  }
+  .well { flex: 1; overflow-y: auto; }
+  .well-inner { max-width: 1120px; margin: 0 auto; padding: 28px 24px 64px; }
+  .body { display: flex; flex: 1; min-height: 0; }
+  .sidenav { width: 248px; flex-shrink: 0; background: var(--grado-gray-50); border-right: 1px solid var(--border-subtle); overflow-y: auto; }
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; margin-right: 2px; align-items: center; }
+  .nav-scrim { display: none; }
+  .crumb-link { color: var(--text-link); cursor: pointer; font: var(--fw-semibold) 13px/1 var(--font-sans); display: inline-flex; align-items: center; gap: 6px; }
+  .crumb-sep { color: var(--grado-gray-400); }
+  .crumb-cur { color: var(--text-secondary); font: var(--fw-semibold) 13px/1 var(--font-sans); }
+
+  @media (max-width: 760px) {
+    .att-session-grid { grid-template-columns: 1fr !important; }
+    .att-quicklinks { grid-template-columns: 1fr 1fr !important; }
+    .topbar-name { display: none; }
+    .well-inner { padding: 18px 14px 56px; }
+    .subbar { padding: 0 14px; }
+    .hamburger { display: inline-flex; }
+    .sidenav { position: fixed; top: 58px; bottom: 0; left: 0; z-index: 55; transform: translateX(-100%); transition: transform .22s ease; box-shadow: var(--shadow-lg); }
+    .sidenav.open { transform: translateX(0); }
+    .nav-scrim.open { display: block; position: fixed; inset: 58px 0 0 0; background: var(--overlay-scrim); z-index: 50; }
+  }
+  @media (max-width: 520px) {
+    .att-quicklinks { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 880px) {
+    .att-learner-row { flex-wrap: wrap; row-gap: 12px !important; }
+    .att-status { width: 100% !important; flex-basis: 100% !important; }
+    .att-remark { flex-basis: 100% !important; }
+    .att-list-head .att-status, .att-list-head .att-remark { display: none; }
+  }
+  .helpfab {
+    position: fixed; right: 20px; bottom: 18px; z-index: 40;
+    background: var(--color-brand); color: #fff; border: none; cursor: pointer;
+    padding: 11px 18px; border-radius: 999px; box-shadow: var(--shadow-lg);
+    font: var(--fw-semibold) 14px/1 var(--font-sans); display: inline-flex; align-items: center; gap: 8px;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 70;
+    background: var(--grado-gray-700); color: #fff; padding: 12px 18px; border-radius: 10px;
+    box-shadow: var(--shadow-lg); font: var(--fw-semibold) 13px/1.4 var(--font-sans);
+    display: inline-flex; align-items: center; gap: 9px; max-width: 90vw;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#610EC9"/><circle cx="34" cy="40" r="14" fill="none" stroke="#fff" stroke-width="4"/><path d="M28 40l4 4 8-9" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="54" y="32" width="22" height="5" rx="2.5" fill="#fff"/><rect x="54" y="44" width="22" height="5" rx="2.5" fill="#fff"/><rect x="30" y="62" width="40" height="5" rx="2.5" fill="#fff" opacity="0.8"/></svg>
+</template>
+
+<script type="text/babel" src="StatusControl.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="TakeAttendance.jsx"></script>
+<script type="text/babel" src="AttendanceRecords.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const STORE_KEY = 'gradoAtt_v3';
+
+// ── Paint Lucide icons in-place (fill the <i>, never replace it) so React keeps
+// ownership of the node and unmounting a subtree can't throw removeChild. We
+// alias this over lucide.createIcons so DS components use it too.
+const _pascal = (n) => n.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase());
+function paintIcons(root) {
+  root = (root && root.querySelectorAll) ? root : document;
+  root.querySelectorAll('i[data-lucide]').forEach((el) => {
+    const name = el.getAttribute('data-lucide');
+    if (el.__lname === name && el.firstChild) return;
+    const data = window.lucide && window.lucide.icons[_pascal(name)];
+    if (!data) return;
+    const w = parseFloat(el.style.width) || 24;
+    const h = parseFloat(el.style.height) || w;
+    const sw = el.style.strokeWidth || 2;
+    const fill = el.style.fill || 'none';
+    const inner = data.map(([t, a]) => '<' + t + ' ' + Object.keys(a).map((k) => k + '="' + a[k] + '"').join(' ') + '></' + t + '>').join('');
+    el.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 24 24" fill="' + fill + '" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" style="display:block;pointer-events:none">' + inner + '</svg>';
+    el.__lname = name;
+    if (!el.style.display) el.style.display = 'inline-flex';
+    if (!el.style.alignItems) el.style.alignItems = 'center';
+  });
+}
+if (window.lucide) window.lucide.createIcons = paintIcons;
+
+function blankSession() { return { marks: {}, remarks: {}, tags: {}, absence: {}, submitted: false, submittedAt: null, audit: [] }; }
+function blankClass() { return { am: blankSession(), pm: blankSession() }; }
+function loadStore() {
+  let r = null;
+  try { r = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) {}
+  const out = {};
+  window.AttData.CLASSES.forEach((c) => {
+    const prev = r && r[c.id];
+    out[c.id] = prev && prev.am && prev.pm ? prev : blankClass();
+  });
+  return out;
+}
+function nowStamp() {
+  const d = new Date();
+  let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, '0');
+  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return `${window.AttData.TODAY.short}, ${h}:${m} ${ap}`;
+}
+
+function TopBar({ onMenu }) {
+  return (
+    <div className="topbar">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <button className="hamburger" onClick={onMenu} aria-label="Open menu"><i data-lucide="menu" style={{ width: 22, height: 22, color: '#fff' }}></i></button>
+        <img src="assets/grado-wordmark-white.svg" alt="grado" style={{ height: 19, display: 'block' }} />
+        <span style={{ width: 1, height: 22, background: 'rgba(255,255,255,.25)' }}></span>
+        <span style={{ font: 'var(--fw-semibold) 14px/1 var(--font-sans)', color: '#fff' }}>Reedley</span>
+        <span style={{ font: 'var(--fw-semibold) 11px/1 var(--font-sans)', letterSpacing: '.06em', color: 'rgba(255,255,255,.7)', textTransform: 'uppercase' }}>Faculty</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <i data-lucide="bell" style={{ width: 19, height: 19, color: 'rgba(255,255,255,.85)' }}></i>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--grado-purple-300)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', font: 'var(--fw-semibold) 12px/1 var(--font-sans)' }}>{window.AttData.TEACHER.initials}</span>
+          <span className="topbar-name" style={{ font: 'var(--fw-semibold) 13px/1 var(--font-sans)', color: '#fff' }}>{window.AttData.TEACHER.name}</span>
+          <i data-lucide="chevron-down" className="topbar-name" style={{ width: 16, height: 16, color: 'rgba(255,255,255,.7)' }}></i>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
+  { id: 'attendance', label: 'Attendance', icon: 'clipboard-check', defaultOpen: true, items: [
+    { id: 'take', label: 'Take Attendance' },
+    { id: 'records', label: 'Attendance Records' },
+  ] },
+  { id: 'sections', label: 'Homeroom Sections', icon: 'users' },
+  { id: 'classes', label: 'Your Classes', icon: 'calendar-days' },
+  { id: 'drops', label: 'Requests to Drop', icon: 'file-down' },
+];
+
+function App() {
+  const { SubportalNav } = window.GradoDesignSystem_045d50;
+  const ADV_ID = window.AttData.ADVISORY.id;
+  const nav0 = (() => { try { return JSON.parse(localStorage.getItem('gradoNav')) || {}; } catch (e) { return {}; } })();
+  const [route, setRoute] = useState(nav0.route || 'dashboard'); // 'dashboard' | 'attendance' | 'records'
+  const [activeClassId, setActiveClassId] = useState(nav0.classId || ADV_ID);
+  const [session, setSession] = useState(nav0.session || 'am');
+  const [store, setStore] = useState(loadStore);
+  const [toast, setToast] = useState(null);
+  const [navOpen, setNavOpen] = useState(false);
+  const wellRef = useRef(null);
+
+  const cls = window.AttData.classById(activeClassId);
+  const effSession = cls.sessions.includes(session) ? session : cls.sessions[0];
+
+  useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }, [store]);
+  useEffect(() => { localStorage.setItem('gradoNav', JSON.stringify({ route, session: effSession, classId: activeClassId })); }, [route, effSession, activeClassId]);
+  useEffect(() => { const t = setTimeout(() => window.lucide && window.lucide.createIcons(), 30); return () => clearTimeout(t); });
+  useEffect(() => { if (wellRef.current) wellRef.current.scrollTop = 0; }, [route, activeClassId]);
+  const flash = (msg) => { setToast(msg); clearTimeout(window.__tt); window.__tt = setTimeout(() => setToast(null), 2600); };
+
+  const goTake = (arg) => {
+    if (typeof arg === 'string') { setActiveClassId(ADV_ID); setSession(arg); setRoute('attendance'); }
+    else if (arg && arg.id) { const c = window.AttData.classById(arg.id); setActiveClassId(c.id); setSession(c.sessions[0]); setRoute('attendance'); }
+  };
+  const update = (fn) => setStore((prev) => { const next = JSON.parse(JSON.stringify(prev)); fn(next[activeClassId][effSession]); return next; });
+
+  const onMark = (id, status) => update((ss) => { if (status) ss.marks[id] = status; else delete ss.marks[id]; });
+  const onRemark = (id, text) => update((ss) => { if (text) ss.remarks[id] = text; else delete ss.remarks[id]; });
+  const onTag = (id, chip) => update((ss) => { ss.tags = ss.tags || {}; if (chip) ss.tags[id] = chip; else delete ss.tags[id]; });
+  // Classification can be updated even after submission (no record reopen needed).
+  const onAbsence = (id, c) => update((ss) => { ss.absence = ss.absence || {}; ss.absence[id] = c; });
+  const onMarkAllPresent = () => update((ss) => { cls.learners.forEach((l) => { ss.marks[l.id] = 'present'; }); });
+  const onSaveDraft = () => { flash('Draft saved'); };
+  const onSubmit = () => { update((ss) => { ss.submitted = true; ss.submittedAt = nowStamp(); ss.audit.push({ type: 'submitted', at: nowStamp() }); }); flash(effSession.toUpperCase() + ' attendance submitted for ' + cls.title); };
+  const onReopen = (reason) => { update((ss) => { ss.submitted = false; ss.audit.push({ type: 'reopened', at: nowStamp(), reason }); }); flash('Record reopened for editing'); };
+  const onSwitchSession = (s) => { if (cls.sessions.includes(s)) setSession(s); };
+
+  const navActive = route === 'attendance' ? 'take' : route === 'records' ? 'records' : 'dashboard';
+  const onNav = (id) => {
+    setNavOpen(false);
+    if (id === 'dashboard') setRoute('dashboard');
+    else if (id === 'take') { setActiveClassId(ADV_ID); setSession('am'); setRoute('attendance'); }
+    else if (id === 'records') setRoute('records');
+    else if (id === 'sections') flash('Homeroom Sections — your advised sections (existing screen).');
+    else if (id === 'classes') flash('Your Classes — classes and grading sheets (existing screen).');
+    else if (id === 'drops') flash('Requests to Drop — students requesting to drop a class (existing screen).');
+  };
+
+  return (
+    <React.Fragment>
+      <TopBar onMenu={() => setNavOpen((v) => !v)} />
+      <div className="body">
+        <div className={'nav-scrim' + (navOpen ? ' open' : '')} onClick={() => setNavOpen(false)}></div>
+        <div className={'sidenav' + (navOpen ? ' open' : '')}>
+          <SubportalNav items={NAV_ITEMS} active={navActive} onSelect={onNav} width={248} style={{ height: '100%', borderRight: 'none' }} />
+        </div>
+        <div className="main">
+          <div className="subbar">
+            {route === 'dashboard' ? (
+              <React.Fragment>
+                <i data-lucide="home" style={{ width: 15, height: 15, color: 'var(--text-muted)' }}></i>
+                <span className="crumb-cur">Faculty Home</span>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-cur">Dashboard</span>
+              </React.Fragment>
+            ) : route === 'records' ? (
+              <React.Fragment>
+                <span className="crumb-link" onClick={() => setRoute('dashboard')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i>Dashboard</span>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-cur">{window.AttData.ADVISORY.name}</span>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-cur">Attendance Records</span>
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <span className="crumb-link" onClick={() => setRoute('dashboard')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i>Dashboard</span>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-cur">{cls.title}</span>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-cur">Attendance · {effSession.toUpperCase()}</span>
+              </React.Fragment>
+            )}
+          </div>
+          <div className="well" ref={wellRef}>
+            <div className="well-inner">
+              {route === 'dashboard'
+                ? <window.TeacherDashboard data={window.AttData} store={store} onTake={goTake} onPrev={() => onNav('records')} />
+                : route === 'records'
+                ? <window.AttendanceRecords data={window.AttData} onFlash={flash} />
+                : <window.TakeAttendance
+                    data={window.AttData} cls={cls} session={effSession} sess={store[activeClassId][effSession]}
+                    onMark={onMark} onRemark={onRemark} onTag={onTag} onAbsence={onAbsence} onMarkAllPresent={onMarkAllPresent}
+                    onSaveDraft={onSaveDraft} onSubmit={onSubmit} onReopen={onReopen}
+                    onSwitchSession={onSwitchSession} onBack={() => setRoute('dashboard')} />}
+            </div>
+          </div>
+        </div>
+      </div>
+      <button className="helpfab" onClick={() => flash('Help centre — chat with support.')}><i data-lucide="life-buoy" style={{ width: 17, height: 17 }}></i>Need help?</button>
+      {toast && <div className="toast"><i data-lucide="info" style={{ width: 16, height: 16 }}></i>{toast}</div>}
+    </React.Fragment>
+  );
+}
+
+function boot() {
+  const DS = window.GradoDesignSystem_045d50;
+  if (!(DS && DS.HeroBanner && DS.SubportalNav && window.TeacherDashboard && window.TakeAttendance && window.AttendanceRecords && window.StatusSegmented && window.AttData)) return setTimeout(boot, 30);
+  ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+  setTimeout(() => window.lucide && window.lucide.createIcons(), 80);
+}
+boot();
+</script>
+</body>
+</html>
